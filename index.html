@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crop Disease Finder - Simple AI-based Leaf Disease Detection</title>
+  <meta name="description" content="Simple AI-based agricultural prototype for crop disease classification using K-Nearest Neighbors (KNN) or Google Gemini Multimodal Vision.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Section -->
+    <header class="header">
+      <div class="header-badge">AI Agricultural Demonstration</div>
+      <h1 class="header-title">🌱 Crop Disease Finder</h1>
+      <p class="header-subtitle">Simple AI-based crop disease detection</p>
+      
+      <!-- AI Engine Toggle (KNN Offline vs Gemini Cloud) -->
+      <div class="engine-selector-container">
+        <div class="engine-toggle-group" role="tablist">
+          <button type="button" class="engine-tab active" id="engineKnnBtn" role="tab" aria-selected="true">
+            <span class="engine-icon">🌿</span>
+            <span class="engine-title">KNN Classifier</span>
+            <span class="engine-badge">Offline Viva Demo</span>
+          </button>
+          <button type="button" class="engine-tab" id="engineGeminiBtn" role="tab" aria-selected="false">
+            <span class="engine-icon">✨</span>
+            <span class="engine-title">Gemini Vision AI</span>
+            <span class="engine-badge badge-cloud">Cloud Multimodal</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Current Algorithm Pill -->
+      <div class="algorithm-pill" id="algorithmPill">
+        <span class="pulse-dot"></span>
+        AI Algorithm: <strong id="algorithmPillText">K-Nearest Neighbors (KNN)</strong>
+      </div>
+    </header>
+
+    <!-- Main Card -->
+    <main class="main-card">
+      <section class="upload-section">
+        <h2 class="section-title">
+          <span class="step-num">1</span> Upload Leaf Image
+        </h2>
+        <p class="section-desc">Upload a clear photo of an infected or healthy crop leaf to analyze symptoms using machine learning.</p>
+
+        <!-- Dropzone / Upload Box -->
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="imageInput" accept="image/*" class="file-input">
+          <div class="dropzone-content" id="dropzonePrompt">
+            <div class="upload-icon">🍃</div>
+            <p class="dropzone-main-text">Drag & drop your leaf image here, or <span>browse</span></p>
+            <p class="dropzone-sub-text">Supports JPG, PNG, WEBP (Corn, Rice, Wheat, Tomato, Potato)</p>
+          </div>
+        </div>
+
+        <!-- Quick Sample Leaf Presets for Viva / Easy Testing -->
+        <div class="sample-presets">
+          <span class="sample-label">💡 Or try a test sample:</span>
+          <div class="sample-buttons">
+            <button type="button" class="sample-btn" data-sample="healthy">🌿 Healthy Leaf</button>
+            <button type="button" class="sample-btn" data-sample="corn_rust">🌽 Corn Rust</button>
+            <button type="button" class="sample-btn" data-sample="rice_blast">🌾 Rice Blast</button>
+            <button type="button" class="sample-btn" data-sample="wheat_mildew">🌾 Wheat Mildew</button>
+            <button type="button" class="sample-btn" data-sample="tomato_early">🍅 Tomato Blight</button>
+            <button type="button" class="sample-btn" data-sample="potato_late">🥔 Potato Blight</button>
+          </div>
+        </div>
+
+        <!-- Image Preview Area -->
+        <div class="preview-wrapper" id="previewWrapper" style="display: none;">
+          <div class="preview-header">
+            <span class="preview-tag">Image Preview</span>
+            <span class="image-name" id="imageName">leaf_sample.jpg</span>
+          </div>
+          <div class="image-container">
+            <img id="imagePreview" alt="Uploaded leaf preview" class="preview-image">
+            <canvas id="featureCanvas" style="display: none;"></canvas>
+          </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="action-buttons">
+          <button type="button" id="analyzeBtn" class="btn btn-primary" disabled>
+            🔍 Analyze Leaf
+          </button>
+          <button type="button" id="resetBtn" class="btn btn-secondary">
+            ↺ Reset
+          </button>
+        </div>
+      </section>
+
+      <!-- Loading State -->
+      <div class="loading-panel" id="loadingPanel" style="display: none;">
+        <div class="spinner"></div>
+        <h3 class="loading-title" id="loadingTitle">Analyzing image...</h3>
+        <p class="loading-subtext" id="loadingSubtext">Extracting RGB chromaticity, chlorophyll index, and lesion patterns for KNN nearest neighbor match.</p>
+      </div>
+
+      <!-- Results Section -->
+      <section class="results-section" id="resultsSection" style="display: none;">
+        <div class="results-header">
+          <div class="results-tag" id="resultsEngineTag">Diagnosis Complete</div>
+          <h2 class="results-title">AI Analysis Result</h2>
+        </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="diagnosis-grid">
+          <div class="diag-card diag-crop">
+            <span class="diag-label">Crop</span>
+            <span class="diag-value" id="resultCrop">Corn</span>
+          </div>
+          <div class="diag-card diag-disease">
+            <span class="diag-label">Disease</span>
+            <span class="diag-value" id="resultDisease">Corn Common Rust</span>
+          </div>
+          <div class="diag-card diag-confidence">
+            <span class="diag-label">Confidence</span>
+            <div class="confidence-container">
+              <span class="diag-value" id="resultConfidence">91%</span>
+              <div class="confidence-bar-bg">
+                <div class="confidence-bar-fill" id="confidenceBar"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Information Panels -->
+        <div class="info-blocks">
+          <!-- Symptoms Block -->
+          <div class="info-card">
+            <div class="info-header">
+              <span class="info-icon">🔬</span>
+              <h3>Symptoms</h3>
+            </div>
+            <p id="resultSymptoms" class="info-text">
+              Small, circular to elongate golden-brown to cinnamon-brown powdery pustules on both upper and lower leaf surfaces.
+            </p>
+          </div>
+
+          <!-- Recommendation Block -->
+          <div class="info-card">
+            <div class="info-header">
+              <span class="info-icon">🛡️</span>
+              <h3>Recommendation</h3>
+            </div>
+            <p id="resultRecommendation" class="info-text">
+              Apply recommended foliar fungicides if disease appears early before blister stage. Utilize resistant hybrid seeds for next planting cycle.
+            </p>
+          </div>
+
+          <!-- AI Explanation Block -->
+          <div class="info-card ai-explanation" id="aiExplanationCard">
+            <div class="info-header">
+              <span class="info-icon" id="explanationIcon">🤖</span>
+              <h3 id="explanationTitle">Algorithm Used: <span class="highlight-text" id="resultAlgorithm">K-Nearest Neighbors (KNN)</span></h3>
+            </div>
+            <p class="info-text" id="explanationDescription">
+              The model extracted 6 visual features (Average R, G, B chromaticity, green leaf ratio, brown/yellow chlorosis ratio, and lesion spot contrast) and computed Euclidean distances against pre-trained botanical profiles with <strong>k = 3</strong> neighbors.
+            </p>
+            
+            <!-- Feature metrics breakdown table (for KNN viva) -->
+            <div class="feature-metrics" id="knnMetricsRow">
+              <div class="metric-item">
+                <span class="metric-name">Green Chlorophyll %</span>
+                <span class="metric-val" id="featGreen">--</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-name">Brown/Yellow Lesion %</span>
+                <span class="metric-val" id="featBrown">--</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-name">Spot/Texture Variance</span>
+                <span class="metric-val" id="featSpots">--</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-name">Nearest Neighbor Match</span>
+                <span class="metric-val" id="featNeighbor">--</span>
+              </div>
+            </div>
+
+            <!-- Gemini Vision details (when Gemini is selected) -->
+            <div class="gemini-details-row" id="geminiDetailsRow" style="display: none;">
+              <div class="gemini-badge-item">
+                <span class="g-badge-label">Model Endpoint:</span>
+                <span class="g-badge-val">gemini-2.5-flash</span>
+              </div>
+              <div class="gemini-badge-item">
+                <span class="g-badge-label">Vision Modality:</span>
+                <span class="g-badge-val">Multimodal Deep Neural Network</span>
+              </div>
+              <div class="gemini-badge-item">
+                <span class="g-badge-label">Analysis Mode:</span>
+                <span class="g-badge-val">Direct Visual Pattern Recognition</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Supported Crops and Diseases Reference -->
+      <details class="classes-reference">
+        <summary>📚 View Supported Crops & Disease Classes (14 Categories)</summary>
+        <div class="classes-grid">
+          <div class="crop-group">
+            <h4>🌽 Corn / Maize</h4>
+            <ul>
+              <li>Corn Common Rust</li>
+              <li>Corn Northern Leaf Blight</li>
+              <li>Corn Gray Leaf Spot</li>
+            </ul>
+          </div>
+          <div class="crop-group">
+            <h4>🌾 Paddy / Rice</h4>
+            <ul>
+              <li>Rice Blast</li>
+              <li>Rice Brown Spot</li>
+              <li>Rice Bacterial Leaf Blight</li>
+            </ul>
+          </div>
+          <div class="crop-group">
+            <h4>🌾 Wheat</h4>
+            <ul>
+              <li>Wheat Leaf Rust</li>
+              <li>Wheat Stripe Rust</li>
+              <li>Wheat Powdery Mildew</li>
+            </ul>
+          </div>
+          <div class="crop-group">
+            <h4>🍅 Tomato</h4>
+            <ul>
+              <li>Tomato Early Blight</li>
+              <li>Tomato Late Blight</li>
+            </ul>
+          </div>
+          <div class="crop-group">
+            <h4>🥔 Potato</h4>
+            <ul>
+              <li>Potato Early Blight</li>
+              <li>Potato Late Blight</li>
+            </ul>
+          </div>
+          <div class="crop-group">
+            <h4>🌿 Healthy</h4>
+            <ul>
+              <li>Healthy Leaf</li>
+            </ul>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <!-- Footer Disclaimer -->
+    <footer class="footer">
+      <p class="disclaimer-text">
+        ⚠️ Prototype for educational purposes. Predictions are based on the demonstration dataset or Gemini multimodal reasoning and should not replace professional agricultural advice.
+      </p>
+      <p class="footer-meta">College AI Viva Prototype • Pure HTML / CSS / JavaScript</p>
+    </footer>
+  </div>
+
+  <script src="script.js?v=2.5.3"></script>
+</body>
+</html>
